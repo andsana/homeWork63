@@ -1,12 +1,12 @@
 import React, {useCallback, useState} from 'react';
-import {Post} from '../../types';
+import {PostMutation} from '../../types';
 import axiosApi from '../../axiosApi';
 import {useNavigate} from 'react-router-dom';
 import Spinner from '../Spinner/Spinner';
 
-const PostForm = () => {
+const PostForm: React.FC = () => {
   const navigate = useNavigate();
-  const [post, setPost] = useState<Post>({
+  const [post, setPost] = useState<PostMutation>({
     title: '',
     description: '',
   });
@@ -15,7 +15,7 @@ const PostForm = () => {
 
   const postChanged = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = event.target;
-    setPost((prevState: Post) => ({
+    setPost((prevState: PostMutation) => ({
       ...prevState,
       [name]: value,
     }));
@@ -26,7 +26,15 @@ const PostForm = () => {
     setLoading(true);
 
     try {
-      await axiosApi.post('posts.json', post);
+      const date = new Date();
+      const formattedDate = `
+      ${date.getFullYear()}-
+      ${(date.getMonth() + 1).toString().padStart(2, '0')}-
+      ${date.getDate().toString().padStart(2, '0')} 
+      ${date.getHours().toString().padStart(2, '0')}:
+      ${date.getMinutes().toString().padStart(2, '0')}
+      `;
+      await axiosApi.post('posts.json', {id: Math.random().toString(), date: formattedDate, ...post});
       navigate('/');
     } finally {
       setLoading(false);
@@ -38,16 +46,16 @@ const PostForm = () => {
       <div className="form-group">
         <label htmlFor="name">Title</label>
         <input
-        id="title" type="text" name="title" required
-        className="form-control"
-        value={post.title}
-        onChange={postChanged}
+          id="title" type="text" name="title" required
+          className="form-control"
+          value={post.title}
+          onChange={postChanged}
         />
       </div>
       <div className="form-group">
-        <label htmlFor="name">Description</label>
-        <input
-          id="description" type="text" name="description" required
+        <label htmlFor="description">Description</label>
+        <textarea
+          id="description" name="description" required
           className="form-control"
           value={post.description}
           onChange={postChanged}
