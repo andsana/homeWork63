@@ -1,17 +1,38 @@
-import React, {useCallback, useState} from 'react';
-import {PostMutation} from '../../types';
+import React, {useCallback, useEffect, useState} from 'react';
+import {PostMutation, Post} from '../../types';
 import axiosApi from '../../axiosApi';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import Spinner from '../Spinner/Spinner';
 
 const PostForm: React.FC = () => {
   const navigate = useNavigate();
+  const {postId} = useParams();
   const [post, setPost] = useState<PostMutation>({
     title: '',
     description: '',
   });
 
   const [loading, setLoading] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axiosApi.get(`posts/${postId}.json`);
+      const postData: Post = response.data;
+      setPost({
+        title: postData.title,
+        description: postData.description,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [postId]);
+
+  useEffect(() => {
+    if (postId) {
+      void fetchData();
+    }
+  }, [fetchData, postId]);
 
   const postChanged = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const {name, value} = event.target;
@@ -26,16 +47,16 @@ const PostForm: React.FC = () => {
     setLoading(true);
 
     try {
-      const date = new Date();
-      const formattedDate = `
-      ${date.getFullYear()}-
-      ${(date.getMonth() + 1).toString().padStart(2, '0')}-
-      ${date.getDate().toString().padStart(2, '0')} 
-      ${date.getHours().toString().padStart(2, '0')}:
-      ${date.getMinutes().toString().padStart(2, '0')}
-      `;
-      await axiosApi.post('posts.json', {id: Math.random().toString(), date: formattedDate, ...post});
-      navigate('/');
+      if (postId) {
+        await axiosApi.put(`posts/${postId}.json`, {
+          ...post,
+        });
+      } else {
+        await axiosApi.post('posts.json', {
+          ...post,
+        });
+      }
+      navigate(`/`);
     } finally {
       setLoading(false);
     }
@@ -74,7 +95,7 @@ const PostForm: React.FC = () => {
   return (
     <div className="row mt-2">
       <div className="col">
-        <h4>Add new blog</h4>
+        <h4>{postId ? 'Edit post' : 'Add new post'}</h4>
         {form}
       </div>
     </div>
